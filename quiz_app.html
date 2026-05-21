@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>矿业经济学刷题App</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+    background: #f0f2f5;
+    min-height: 100vh;
+    color: #333;
+}
+.header {
+    background: linear-gradient(135deg, #1a3a5c 0%, #2d6a9f 100%);
+    color: #fff;
+    padding: 16px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    position: sticky; top: 0; z-index: 100;
+}
+.header h1 { font-size: 1.3em; font-weight: 600; }
+.header-stats { display: flex; gap: 20px; font-size: 0.9em; }
+.header-stats span { background: rgba(255,255,255,0.15); padding: 4px 12px; border-radius: 12px; }
+
+.container { max-width: 800px; margin: 0 auto; padding: 20px; }
+
+/* Mode Selector */
+.mode-bar {
+    display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
+    background: #fff; padding: 12px 16px; border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    align-items: center;
+}
+.mode-btn {
+    padding: 8px 16px; border: 2px solid #e0e0e0; border-radius: 8px;
+    background: #fff; cursor: pointer; font-size: 0.9em; transition: all 0.2s;
+    white-space: nowrap;
+}
+.mode-btn:hover { border-color: #2d6a9f; color: #2d6a9f; }
+.mode-btn.active { background: #2d6a9f; color: #fff; border-color: #2d6a9f; }
+.mode-btn.danger.active { background: #e74c3c; border-color: #e74c3c; }
+.badge {
+    display: inline-block; background: #e74c3c; color: #fff;
+    border-radius: 10px; padding: 1px 8px; font-size: 0.75em; margin-left: 4px;
+}
+
+/* Question Card */
+.q-card {
+    background: #fff; border-radius: 12px; padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    margin-bottom: 16px;
+    border-left: 4px solid transparent;
+    transition: border-color 0.3s;
+}
+.q-card.correct { border-left-color: #27ae60; }
+.q-card.wrong { border-left-color: #e74c3c; }
+
+.q-header {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+}
+.q-type-badge {
+    padding: 3px 10px; border-radius: 6px; font-size: 0.75em; font-weight: 600;
+    white-space: nowrap;
+}
+.q-type-badge.single { background: #e8f4fd; color: #2d6a9f; }
+.q-type-badge.multi { background: #fef3e2; color: #e67e22; }
+
+.q-number { font-weight: 700; color: #555; font-size: 0.95em; }
+.q-title { font-size: 1.05em; line-height: 1.7; flex: 1; }
+
+/* Options */
+.options { display: flex; flex-direction: column; gap: 8px; }
+.option {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 12px 16px; border: 2px solid #e8e8e8; border-radius: 10px;
+    cursor: pointer; transition: all 0.2s;
+}
+.option:hover { border-color: #b0c4de; background: #fafbfc; }
+.option.selected { border-color: #2d6a9f; background: #e8f4fd; }
+.option.correct-answer { border-color: #27ae60 !important; background: #eafaf1 !important; }
+.option.wrong-answer { border-color: #e74c3c !important; background: #fdedec !important; }
+.option input { margin-top: 2px; cursor: pointer; }
+
+.option-label {
+    font-weight: 700; color: #2d6a9f; min-width: 24px;
+}
+.option-text { flex: 1; line-height: 1.5; }
+
+/* Actions */
+.actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+.btn {
+    padding: 10px 24px; border: none; border-radius: 8px; cursor: pointer;
+    font-size: 0.95em; font-weight: 600; transition: all 0.2s;
+}
+.btn-primary { background: #2d6a9f; color: #fff; }
+.btn-primary:hover { background: #1a3a5c; }
+.btn-success { background: #27ae60; color: #fff; }
+.btn-success:hover { background: #1e8449; }
+.btn-outline { background: #fff; color: #2d6a9f; border: 2px solid #2d6a9f; }
+.btn-outline:hover { background: #e8f4fd; }
+.btn-danger { background: #e74c3c; color: #fff; }
+.btn-danger:hover { background: #c0392b; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Feedback */
+.feedback {
+    margin-top: 12px; padding: 12px 16px; border-radius: 8px;
+    font-size: 0.9em; line-height: 1.6; display: none;
+}
+.feedback.show { display: block; }
+.feedback.correct { background: #eafaf1; color: #1e8449; }
+.feedback.wrong { background: #fdedec; color: #c0392b; }
+
+/* Progress */
+.progress-bar {
+    height: 4px; background: #e0e0e0; border-radius: 2px;
+    margin-bottom: 20px; overflow: hidden;
+}
+.progress-fill {
+    height: 100%; background: #2d6a9f; border-radius: 2px; transition: width 0.3s;
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center; padding: 60px 20px; color: #999;
+}
+.empty-state .icon { font-size: 3em; margin-bottom: 16px; }
+.empty-state p { font-size: 1.1em; }
+
+/* Responsive */
+@media (max-width: 600px) {
+    .container { padding: 10px; }
+    .q-card { padding: 16px; }
+    .header { padding: 12px 16px; }
+    .header h1 { font-size: 1.1em; }
+    .header-stats { gap: 10px; font-size: 0.8em; }
+    .btn { padding: 8px 16px; font-size: 0.85em; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>矿业经济学 · 刷题</h1>
+    <div class="header-stats">
+        <span id="stat-total">📝 总题: 0</span>
+        <span id="stat-done">✅ 已做: 0</span>
+        <span id="stat-wrong">❌ 错题: 0</span>
+        <span id="stat-rate">📊 正确率: -</span>
+    </div>
+</div>
+
+<div class="container">
+    <div class="mode-bar">
+        <button class="mode-btn active" data-mode="all">📚 全部题目</button>
+        <button class="mode-btn" data-mode="single">📋 仅单选题</button>
+        <button class="mode-btn" data-mode="multi">📑 仅多选题</button>
+        <button class="mode-btn" data-mode="random">🎲 随机10题</button>
+        <button class="mode-btn danger" data-mode="wrong" id="wrong-mode-btn">
+            ❌ 错题本<span class="badge" id="wrong-count-badge">0</span>
+        </button>
+        <button class="btn btn-outline" onclick="resetWrongBook()" style="margin-left:auto;font-size:0.8em;padding:6px 12px;">
+            🗑 清空错题本
+        </button>
+    </div>
+
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+
+    <div id="quiz-area"></div>
+
+    <div style="text-align:center;margin-top:20px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;" id="nav-buttons"></div>
+</div>
+
+<script>
+// ====== DATA ======
+const QUESTION_BANK = [{"id": "S2", "type": "single", "number": 2, "question": "根据Hotelling资源耗竭法则，在完全竞争均衡条件下，哪一部分应以等于社会贴现率r的速率增长？", "options": [{"label": "A", "text": "资源租金（净价格）"}, {"label": "B", "text": "平均品位"}, {"label": "C", "text": "总成本"}, {"label": "D", "text": "劳动生产率"}], "answer": "A", "explanation": "Hotelling法则指出，在完全竞争均衡下，资源租金（净价格）应以社会贴现率r的速率增长。"}, {"id": "S3", "type": "single", "number": 3, "question": "在JORC标准中，有资质的从业人员（Competent Person, CP）需在相关矿产类型领域拥有至少多少年实践经验，且须为认可专业机构的注册会员？", "options": [{"label": "A", "text": "3年"}, {"label": "B", "text": "5年"}, {"label": "C", "text": "8年"}, {"label": "D", "text": "10年"}], "answer": "B", "explanation": "JORC标准要求CP在相关矿产类型领域拥有至少5年实践经验。"}, {"id": "S4", "type": "single", "number": 4, "question": "在中国GB/T 17766—2020分类标准中，\"控制资源量\"对应的分类代码是", "options": [{"label": "A", "text": "333"}, {"label": "B", "text": "332"}, {"label": "C", "text": "331"}, {"label": "D", "text": "122b"}], "answer": "B", "explanation": "GB/T 17766-2020中，控制资源量对应332，探明资源量对应331，推断资源量对应333。"}, {"id": "S6", "type": "single", "number": 6, "question": "当铜价从7万元/吨下跌至4.5万元/吨（降幅约36%）时，其他成本条件不变，边界品位将会", "options": [{"label": "A", "text": "明显下降，可采储量增加"}, {"label": "B", "text": "保持不变，边界品位与金属价格无关"}, {"label": "C", "text": "明显上升，大量现有储量降级为次经济资源量"}, {"label": "D", "text": "略微上升，但对储量影响可忽略"}], "answer": "C", "explanation": "当金属价格大幅下跌时，边界品位会明显上升，使得大量低品位储量不再经济可采，降级为次经济资源量。"}, {"id": "S12", "type": "single", "number": 12, "question": "矿产消费库兹涅茨轨迹中，\"工业化起步期\"的典型人均GDP区间是", "options": [{"label": "A", "text": "小于5,000美元"}, {"label": "B", "text": "5,000-20,000美元"}, {"label": "C", "text": "大于20,000美元"}, {"label": "D", "text": "大于50,000美元"}], "answer": "A", "explanation": "矿产消费库兹涅茨轨迹中，工业化起步期的典型人均GDP区间是小于5,000美元。"}, {"id": "S16", "type": "single", "number": 16, "question": "在勘查投入决策中，最优停钻的边际原则是", "options": [{"label": "A", "text": "MR勘查 > MC勘查时停止"}, {"label": "B", "text": "MR勘查 = 0时继续投入"}, {"label": "C", "text": "MR勘查 ≤ MC勘查时停止追加勘查"}, {"label": "D", "text": "MC勘查越高越应加大投入"}], "answer": "C", "explanation": "最优停钻的边际原则是当边际收益（MR勘查）小于等于边际成本（MC勘查）时停止追加勘查投入。"}, {"id": "S17", "type": "single", "number": 17, "question": "在国际矿业成本报告的C1/C2/C3/AISC体系中，\"C2成本\"的计算公式为", "options": [{"label": "A", "text": "采矿成本 + 选矿成本 + TC/RC − 副产品收益"}, {"label": "B", "text": "C1 + 折旧与摊销（D&A）"}, {"label": "C", "text": "C1 + 资本化勘查支出 + 资源税"}, {"label": "D", "text": "C3 + 持续资本支出 + 行政管理费用 + 闭坑拨备"}], "answer": "B", "explanation": "C2成本 = C1（现金成本）+ 折旧与摊销（D&A）。A描述的是C1成本的计算。"}, {"id": "S30", "type": "single", "number": 30, "question": "根据ESG实证研究，MSCI ESG评级低于BB级的矿业公司，其企业价值倍数（EV/EBITDA）相较于行业均值的表现为", "options": [{"label": "A", "text": "高于行业均值约1.5—2倍，因为风险补偿使投资者要求更高回报"}, {"label": "B", "text": "低于行业均值约1.5—2倍，反映市场对其可持续性风险的折价"}, {"label": "C", "text": "与行业均值相当，ESG评级不影响矿业公司估值"}, {"label": "D", "text": "高于行业均值约0.5倍，因为低ESG意味着更低的合规成本"}], "answer": "B", "explanation": "低ESG评级的矿业公司通常面临估值折价，EV/EBITDA低于行业均值约1.5-2倍，反映市场对其可持续性风险的担忧。"}, {"id": "S31", "type": "single", "number": 31, "question": "矿山总利润的分解中，因资源不可再生稀缺性产生的动态租金，理论上应归属于", "options": [{"label": "A", "text": "矿业投资者"}, {"label": "B", "text": "矿山技术人员"}, {"label": "C", "text": "全体国民（国家代为持有）"}, {"label": "D", "text": "矿石购买方"}], "answer": "C", "explanation": "因资源不可再生稀缺性产生的动态租金（Hotelling Rent）理论上应归属于全体国民，由国家代为持有。"}, {"id": "S40", "type": "single", "number": 40, "question": "以下属于矿山ESG\"环境(E)\"维度的核心指标有", "options": [{"label": "A", "text": "碳排放强度"}, {"label": "B", "text": "水资源使用强度"}, {"label": "C", "text": "尾矿库安全评级"}, {"label": "D", "text": "失业事故频率(TRIFR)"}, {"label": "E", "text": "董事会独立性"}], "answer": "ABC", "explanation": "尾矿库安全评级属于环境(E)维度；失业事故频率(TRIFR)属于社会(S)维度；董事会独立性属于治理(G)维度。"}, {"id": "S28", "type": "single", "number": 28, "question": "在DCF（现金流）模型的7步法中，被称为现金流预测\"原料\"的是", "options": [{"label": "A", "text": "资源储量基础"}, {"label": "B", "text": "矿山生产计划"}, {"label": "C", "text": "贴现率"}, {"label": "D", "text": "终值"}], "answer": "A", "explanation": "资源储量基础是现金流预测的\"原料\"，矿山生产计划将其转化为产量和现金流。"}, {"id": "S33", "type": "single", "number": 33, "question": "矿业市场法中，企业价值EV的常见计算式是", "options": [{"label": "A", "text": "市值 + 现金 - 负债"}, {"label": "B", "text": "营业收入 - 营业成本"}, {"label": "C", "text": "净利润 + 折旧"}, {"label": "D", "text": "市值 + 有息负债 - 现金"}], "answer": "D", "explanation": "企业价值EV = 市值 + 有息负债 - 现金（即股权价值+净债务）。"}, {"id": "S40b", "type": "single", "number": 40, "question": "在\"地质师的语言\"与\"经济学语言\"的对应关系中，\"勘查靶区（Exploration Target）\"对应的是", "options": [{"label": "A", "text": "NPV"}, {"label": "B", "text": "EMV"}, {"label": "C", "text": "AISC"}, {"label": "D", "text": "IRR"}], "answer": "B", "explanation": "勘查靶区对应EMV（期望货币价值），体现了勘查阶段的不确定性和期望值思维。"}, {"id": "S43", "type": "single", "number": 43, "question": "信息经济价值VOI的基本表达式是", "options": [{"label": "A", "text": "VOI = 信息成本－EMV"}, {"label": "B", "text": "VOI = EMV_with_info－EMV_without_info"}, {"label": "C", "text": "VOI = NPV＋IRR"}, {"label": "D", "text": "VOI = 收入－税费"}], "answer": "B", "explanation": "信息经济价值VOI = 有信息时的EMV - 无信息时的EMV。"}, {"id": "S44", "type": "single", "number": 44, "question": "列举的中国大型矿企案例中，对刚果（金）地区依赖度最高的是哪家公司？", "options": [{"label": "A", "text": "紫金矿业"}, {"label": "B", "text": "中国五矿"}, {"label": "C", "text": "洛阳钼业"}, {"label": "D", "text": "中国铝业"}], "answer": "C", "explanation": "洛阳钼业（CMOC）拥有刚果（金）TFM铜钴矿，对刚果（金）地区依赖度最高。"}, {"id": "S47", "type": "single", "number": 47, "question": "在购买力平价（PPP）假设下，可研中常采用的简化处理是", "options": [{"label": "A", "text": "假设实际汇率长期不变"}, {"label": "B", "text": "假设名义汇率长期固定不变"}, {"label": "C", "text": "假设汇率与通胀完全无关"}, {"label": "D", "text": "假设本币一定持续升值"}], "answer": "A", "explanation": "PPP假设下，名义汇率会随通胀差异调整，实际汇率长期不变。"}, {"id": "S50", "type": "single", "number": 50, "question": "一般情况下，项目可接受的IRR判断准则是", "options": [{"label": "A", "text": "IRR > 0"}, {"label": "B", "text": "IRR > 通货膨胀率"}, {"label": "C", "text": "IRR > WACC"}, {"label": "D", "text": "IRR > 企业所得税率"}], "answer": "C", "explanation": "项目可接受的基本准则是IRR > WACC（加权平均资本成本），即回报率超过资金成本。"}, {"id": "S62", "type": "single", "number": 62, "question": "当现货价格低于期货价格时，市场通常表现为？", "options": [{"label": "A", "text": "正基差与Backwardation"}, {"label": "B", "text": "负基差与Contango"}, {"label": "C", "text": "正基差与Contango"}, {"label": "D", "text": "负基差与Backwardation"}], "answer": "B", "explanation": "现货价格<期货价格时，基差=现货-期货为负，市场表现为Contango（正向市场）。"}, {"id": "S63", "type": "single", "number": 63, "question": "矿产品进口贸易中最常见的付款保证工具是？", "options": [{"label": "A", "text": "股票质押"}, {"label": "B", "text": "商业承兑汇票"}, {"label": "C", "text": "信用证（L/C）"}, {"label": "D", "text": "可转债"}], "answer": "C", "explanation": "信用证（L/C）是矿产品国际贸易中最常见的付款保证工具，提供银行信用背书。"}, {"id": "S64", "type": "single", "number": 64, "question": "在信用证业务中，银行的审核重点是？", "options": [{"label": "A", "text": "货物的真实质量与含杂水平"}, {"label": "B", "text": "卖方的采矿许可证有效期"}, {"label": "C", "text": "单据是否相符"}, {"label": "D", "text": "铜价未来走势是否上涨"}], "answer": "C", "explanation": "信用证业务中银行遵循\"单证相符\"原则，审核重点是单据是否与信用证条款一致。"}, {"id": "S65", "type": "single", "number": 65, "question": "在四种市场结构中，厂商数量\"极多（无数）\"、产品同质、进入壁垒极低，对应的市场结构是？", "options": [{"label": "A", "text": "完全竞争"}, {"label": "B", "text": "垄断竞争"}, {"label": "C", "text": "寡头垄断"}, {"label": "D", "text": "完全垄断"}], "answer": "A", "explanation": "完全竞争市场的特征：无数厂商、产品同质、无进入壁垒。"}, {"id": "S67", "type": "single", "number": 67, "question": "全球铁矿石海运贸易长期主要由哪三家公司主导？", "options": [{"label": "A", "text": "BHP、Rio Tinto、Vale"}, {"label": "B", "text": "Codelco、FMG、De Beers"}, {"label": "C", "text": "Lynas、MP Materials、SQM"}, {"label": "D", "text": "Glencore、Alrosa、Nutrien"}], "answer": "A", "explanation": "全球铁矿石海运贸易长期由BHP、Rio Tinto、Vale三大巨头主导，三者合计控制约70%的海运市场。"}, {"id": "S78", "type": "single", "number": 78, "question": "全面从价阶段中，铜矿1%—4%的税率上下限在法定幅度内主要由谁确定？", "options": [{"label": "A", "text": "国务院"}, {"label": "B", "text": "省级政府"}, {"label": "C", "text": "矿业协会"}, {"label": "D", "text": "矿山企业"}], "answer": "B", "explanation": "在法定幅度内，省级政府拥有确定具体适用税率的权限。"}, {"id": "S86", "type": "single", "number": 86, "question": "在IEA《关键矿产展望2024》的NZE情景下，到2030年需求相对2022年基线增幅约13倍的矿产是？", "options": [{"label": "A", "text": "锂（Li）"}, {"label": "B", "text": "钴（Co）"}, {"label": "C", "text": "镍（Ni）"}, {"label": "D", "text": "铜（Cu）"}], "answer": "A", "explanation": "根据IEA报告，在净零排放（NZE）情景下，锂的需求增幅最大，到2030年约为2022年基线的13倍。"}, {"id": "S89", "type": "single", "number": 89, "question": "中国矿业对外投资在\"精准布局期\"（2017—2025）主要聚焦于哪一类矿产？", "options": [{"label": "A", "text": "煤、铁、锡"}, {"label": "B", "text": "锂、钴、镍、稀土"}, {"label": "C", "text": "金、银、铅、锌"}, {"label": "D", "text": "石油、天然气、页岩气"}], "answer": "B", "explanation": "精准布局期（2017-2025）中国矿业对外投资主要聚焦于新能源关键矿产：锂、钴、镍、稀土。"}, {"id": "S95", "type": "single", "number": 95, "question": "依据《全国资源型城市可持续发展规划（2013—2020年）》，数量最多的资源型城市类型是？", "options": [{"label": "A", "text": "成长型"}, {"label": "B", "text": "成熟型"}, {"label": "C", "text": "衰退型"}, {"label": "D", "text": "再生型"}], "answer": "B", "explanation": "根据该规划，成熟型资源型城市数量最多，占资源型城市总数的约60%。"}, {"id": "S98", "type": "single", "number": 98, "question": "绿色债券相较同期传统债券的典型融资成本优势表现为利差大致降低多少？", "options": [{"label": "A", "text": "5—10个基点"}, {"label": "B", "text": "15—50个基点"}, {"label": "C", "text": "80—120个基点"}, {"label": "D", "text": "150—300个基点"}], "answer": "B", "explanation": "绿色债券的融资成本优势通常表现为利差降低15-50个基点（0.15%-0.50%）。"}, {"id": "S110", "type": "single", "number": 110, "question": "根据文章，指导中国经济绿色发展的基本理论是什么？", "options": [{"label": "A", "text": "马克思主义生态理论"}, {"label": "B", "text": "西方生态危机理论"}, {"label": "C", "text": "可持续发展理论"}, {"label": "D", "text": "生态现代化理论"}], "answer": "A", "explanation": "文章指出马克思主义生态理论是指导中国经济绿色发展的基本理论。"}, {"id": "M1", "type": "multi", "number": 1, "question": "下列哪些矿产被列为中国的优势矿产？", "options": [{"label": "A", "text": "稀土"}, {"label": "B", "text": "钨"}, {"label": "C", "text": "钼"}, {"label": "D", "text": "锑"}], "answer": "ABCD", "explanation": "稀土、钨、钼、锑均被列为中国的优势矿产。"}, {"id": "M2", "type": "multi", "number": 2, "question": "在矿业语境中，可持续发展要求包括", "options": [{"label": "A", "text": "资源租金再投资"}, {"label": "B", "text": "矿山生态修复与闭坑管理"}, {"label": "C", "text": "资源型社区多元经济转型"}, {"label": "D", "text": "全面禁止矿产开发"}], "answer": "ABC", "explanation": "可持续发展要求包括资源租金再投资、生态修复与闭坑管理、社区经济转型，不包括全面禁止开发。"}, {"id": "M3", "type": "multi", "number": 3, "question": "矿床经济价值由三个评价维度共同决定，下列属于这三个维度的是", "options": [{"label": "A", "text": "矿石品位（Grade）"}, {"label": "B", "text": "矿体规模（Tonnage）"}, {"label": "C", "text": "可采性（Minability）"}, {"label": "D", "text": "矿山海拔高度"}], "answer": "ABC", "explanation": "矿床经济价值由品位、规模、可采性三个维度决定。矿山海拔高度不是核心评价维度。"}, {"id": "M4", "type": "multi", "number": 4, "question": "JORC标准报告需遵循的三大核心原则是", "options": [{"label": "A", "text": "透明度（Transparency）"}, {"label": "B", "text": "重要性（Materiality）"}, {"label": "C", "text": "能力（Competence）"}, {"label": "D", "text": "保守性（Conservatism）"}], "answer": "ABC", "explanation": "JORC三大核心原则：透明度、重要性、能力。保守性不是JORC的核心原则。"}, {"id": "M5", "type": "multi", "number": 5, "question": "根据课本，储量（Reserves）须同时满足哪些条件？", "options": [{"label": "A", "text": "具有足够的地质可靠程度（控制或探明级别）"}, {"label": "B", "text": "经可行性研究证明在现有价格和技术条件下经济可采"}, {"label": "C", "text": "已获得必要的法律/环境许可"}, {"label": "D", "text": "必须已开始实际开采生产"}], "answer": "ABC", "explanation": "储量须满足地质可靠、经济可采、法律许可三个条件。不必已开始开采，已获许可即可。"}, {"id": "M6", "type": "multi", "number": 6, "question": "NI 43-101标准的技术报告需包含的主要内容有", "options": [{"label": "A", "text": "地质背景"}, {"label": "B", "text": "采样方法与品位估算"}, {"label": "C", "text": "采矿研究"}, {"label": "D", "text": "环境影响分析"}], "answer": "ABC", "explanation": "NI 43-101技术报告主要包括地质背景、采样与品位估算、采矿研究等核心内容。"}, {"id": "M7", "type": "multi", "number": 7, "question": "内部收益率（IRR）的主要局限性包括", "options": [{"label": "A", "text": "不考虑投资规模（小项目高IRR vs大项目高NPV的抉择问题）"}, {"label": "B", "text": "对非常规现金流（多次换号）可能有多个解"}, {"label": "C", "text": "隐含的再投资率假设不合理"}, {"label": "D", "text": "计算结果与净现值（NPV）永远一致，因此无需单独分析"}], "answer": "ABC", "explanation": "IRR的主要局限性包括：不考虑投资规模、非常规现金流可能有多个解、隐含再投资率假设不合理。D显然错误。"}, {"id": "M8", "type": "multi", "number": 8, "question": "自然资源部维护的矿产资源储量数据体系，主要数据来源包括", "options": [{"label": "A", "text": "《中国矿产资源报告》（年报）"}, {"label": "B", "text": "全国矿产资源储量数据库"}, {"label": "C", "text": "矿业权核查数据"}, {"label": "D", "text": "重要矿产资源国情调查报告"}], "answer": "ABCD", "explanation": "四个选项均为自然资源部矿产资源储量数据体系的主要数据来源。"}, {"id": "M9", "type": "multi", "number": 9, "question": "矿山总利润可分解为哪几种来源？", "options": [{"label": "A", "text": "普通利润（Normal Profit/Capital Return）"}, {"label": "B", "text": "超额利润（Differential Rent/Ricardian Rent）"}, {"label": "C", "text": "资源租金（Scarcity Rent/Hotelling Rent）"}, {"label": "D", "text": "政府补贴收入"}], "answer": "ABC", "explanation": "矿山总利润可分解为普通利润、超额利润（级差租金）和资源租金（稀缺租金）。政府补贴不属于利润分解类型。"}, {"id": "M10", "type": "multi", "number": 10, "question": "关于边界品位与金属价格关系的描述，正确的有", "options": [{"label": "A", "text": "金属价格上涨时，边界品位下降，可采储量增加"}, {"label": "B", "text": "金属价格下跌时，边界品位上升，储量减少"}, {"label": "C", "text": "边界品位与金属价格呈反向非线性关系"}, {"label": "D", "text": "金属价格变化对边界品位没有实质影响"}], "answer": "ABC", "explanation": "边界品位与金属价格呈反向关系：价格上涨→边界品位下降→可采储量增加；价格下跌则相反。D明显错误。"}, {"id": "M11", "type": "multi", "number": 11, "question": "在使用USGS矿物商品摘要储量数据时需注意哪些局限性？", "options": [{"label": "A", "text": "USGS储量数据基于各国政府上报数据，品质参差不齐"}, {"label": "B", "text": "中国、俄罗斯的数据依赖国内统计，与JORC/43-101标准不可直接比较"}, {"label": "C", "text": "使用时须注明\"USGS口径\"并说明其局限性"}, {"label": "D", "text": "USGS数据绝对准确，无需核实，可直接引用"}], "answer": "ABC", "explanation": "USGS数据存在各国上报品质差异、统计标准不同等局限性，使用时需注明口径。D明显错误。"}, {"id": "M12", "type": "multi", "number": 12, "question": "关于GB/T 17766—2020与JORC 2012的比较，描述正确的有", "options": [{"label": "A", "text": "两套标准均源自CRIRSCO基础框架（资源量三级+储量两级）"}, {"label": "B", "text": "中国标准在国际资本市场境外融资中通常不被直接接受"}, {"label": "C", "text": "JORC强制要求CP独立签署，中国标准鼓励但无强制独立核查要求"}, {"label": "D", "text": "两套标准的分类类别名称和数字代码完全相同"}], "answer": "ABC", "explanation": "两套标准虽同源CRIRSCO，但分类名称和代码有差异（如中国332对应JORC的Indicated），D错误。"}, {"id": "M13", "type": "multi", "number": 13, "question": "矿产品主要定价机制包括", "options": [{"label": "A", "text": "供需现货定价"}, {"label": "B", "text": "商品交易所定价"}, {"label": "C", "text": "长期合同定价"}, {"label": "D", "text": "纯行政统一定价"}], "answer": "ABC", "explanation": "矿产品定价机制主要包括供需现货定价、交易所定价和长期合同定价。纯行政统一定价已非主流。"}, {"id": "M14", "type": "multi", "number": 14, "question": "针对矿权交易中的信息不对称问题，文中提出的制度性解决方案包括", "options": [{"label": "A", "text": "强制信息披露（JORC/NI 43-101）"}, {"label": "B", "text": "独立地质评估与Data Room审查"}, {"label": "C", "text": "QP制度与现场监督"}, {"label": "D", "text": "分期付款条款"}], "answer": "ABCD", "explanation": "四项均为针对矿权交易信息不对称的制度性解决方案。"}, {"id": "M15", "type": "multi", "number": 15, "question": "以下属于矿山\"固定成本（FC）\"的成本项目有", "options": [{"label": "A", "text": "管理人员薪资"}, {"label": "B", "text": "设备全部年度折旧（直线法）"}, {"label": "C", "text": "炸药耗用量（随爆破量变化）"}, {"label": "D", "text": "行政与管理费用"}, {"label": "E", "text": "能源随产量变化的电力消耗"}], "answer": "ABD", "explanation": "固定成本包括管理人员薪资、设备折旧和行政管理费用。炸药和能源消耗属于变动成本。"}, {"id": "M16", "type": "multi", "number": 16, "question": "矿山规模经济的六个来源机制包括", "options": [{"label": "A", "text": "设备规模效益（\"6/10法则\"）"}, {"label": "B", "text": "固定成本摊薄效应"}, {"label": "C", "text": "专业化分工效率提升"}, {"label": "D", "text": "采购议价能力增强"}, {"label": "E", "text": "品位下降导致处理成本上升"}], "answer": "ABCD", "explanation": "规模经济来源包括设备效益、固定成本摊薄、专业化分工和采购议价。E是规模不经济的原因。"}, {"id": "M17", "type": "multi", "number": 17, "question": "以下属于矿山环境外部性类型，且教材中明确列举的有", "options": [{"label": "A", "text": "水体污染（尾矿库渗漏、酸性岩石排水AMD）"}, {"label": "B", "text": "大气污染（爆破粉尘、SO₂排放）"}, {"label": "C", "text": "土地损毁（露天矿剥离、塌陷区）"}, {"label": "D", "text": "气候影响（CO₂/CH₄排放）"}, {"label": "E", "text": "社区社会影响（噪音、振动、交通压力）"}], "answer": "ABCDE", "explanation": "五项均为矿山环境外部性的常见类型。社区社会影响中的噪音、振动、交通也属于环境外部性范畴。"}, {"id": "M24", "type": "multi", "number": 24, "question": "矿山生产计划中的关键参数通常包括", "options": [{"label": "A", "text": "年处理量"}, {"label": "B", "text": "矿石品位"}, {"label": "C", "text": "采矿回收率"}, {"label": "D", "text": "选矿回收率"}], "answer": "ABCD", "explanation": "矿山生产计划的四个关键参数：年处理量、矿石品位、采矿回收率、选矿回收率。"}, {"id": "M25", "type": "multi", "number": 25, "question": "在讲义中被重点讨论的敏感性分析核心变量包括", "options": [{"label": "A", "text": "金属价格"}, {"label": "B", "text": "贴现率"}, {"label": "C", "text": "产量（吞吐量）"}, {"label": "D", "text": "矿权证照编号"}], "answer": "ABC", "explanation": "敏感性分析的核心变量包括金属价格、贴现率和产量。矿权证照编号不属于敏感性分析变量。"}, {"id": "M26", "type": "multi", "number": 26, "question": "历史成本法/勘查成本还原法的主要局限包括", "options": [{"label": "A", "text": "成本不等于价值"}, {"label": "B", "text": "难反映矿床地质独特性"}, {"label": "C", "text": "通胀调整存在主观性"}, {"label": "D", "text": "技术进步会削弱早期工作的现时价值"}], "answer": "ABCD", "explanation": "四项均为历史成本法的主要局限。"}, {"id": "M27", "type": "multi", "number": 27, "question": "市场法寻找可比交易时，除三项核心标准外，还需要关注的辅助因素有", "options": [{"label": "A", "text": "地理区位"}, {"label": "B", "text": "市场时机"}, {"label": "C", "text": "教师年龄"}, {"label": "D", "text": "办公楼层"}], "answer": "AB", "explanation": "辅助因素包括地理区位和市场时机。教师年龄和办公楼层是无关因素。"}, {"id": "M28", "type": "multi", "number": 28, "question": "EV/资源量倍数法在应用时常见的调整因素包括", "options": [{"label": "A", "text": "阶段溢价/折价"}, {"label": "B", "text": "品位调整"}, {"label": "C", "text": "流动性折价"}, {"label": "D", "text": "控制权溢价"}], "answer": "ABCD", "explanation": "EV/资源量倍数法的常见调整因素包括阶段溢价/折价、品位调整、流动性折价和控制权溢价。"}, {"id": "M34", "type": "multi", "number": 34, "question": "长期投资决策的动态评价方法包括", "options": [{"label": "A", "text": "净现值法"}, {"label": "B", "text": "内部收益率法"}, {"label": "C", "text": "投资回收期法"}, {"label": "D", "text": "年值法"}, {"label": "E", "text": "获利指数法"}], "answer": "ABDE", "explanation": "动态评价方法包括净现值法、内部收益率法、年值法和获利指数法。投资回收期法属于静态评价方法。"}, {"id": "M35", "type": "multi", "number": 35, "question": "矿产勘查投资中常见的三类核心风险包括：", "options": [{"label": "A", "text": "地质风险"}, {"label": "B", "text": "经济风险"}, {"label": "C", "text": "政治风险"}, {"label": "D", "text": "蒸发风险"}], "answer": "ABC", "explanation": "矿产勘查投资的三类核心风险：地质风险、经济风险和政治风险。蒸发风险与矿产勘查无关。"}, {"id": "M38", "type": "multi", "number": 38, "question": "贝叶斯更新框架中的核心要素包括：", "options": [{"label": "A", "text": "先验概率"}, {"label": "B", "text": "似然信息"}, {"label": "C", "text": "后验概率"}, {"label": "D", "text": "机会成本"}], "answer": "ABC", "explanation": "贝叶斯更新框架的核心要素：先验概率、似然信息、后验概率。机会成本不属于贝叶斯框架要素。"}, {"id": "M39", "type": "multi", "number": 39, "question": "下列哪些情形出现时，应认真考虑止损放弃勘查项目？", "options": [{"label": "A", "text": "前向EMV≤0"}, {"label": "B", "text": "目标金属价格长期暴跌"}, {"label": "C", "text": "政治风险突变"}, {"label": "D", "text": "同等资金投入其他靶区的前向EMV明显更高"}], "answer": "ABCD", "explanation": "四项情形均构成应认真考虑止损的条件。"}, {"id": "M47", "type": "multi", "number": 47, "question": "在单因素敏感性分析中，常被选为关键输入变量的有？", "options": [{"label": "A", "text": "金属价格"}, {"label": "B", "text": "CAPEX"}, {"label": "C", "text": "OPEX"}, {"label": "D", "text": "贴现率"}], "answer": "ABCD", "explanation": "金属价格、CAPEX、OPEX和贴现率均为单因素敏感性分析的常用关键变量。"}, {"id": "M50", "type": "multi", "number": 50, "question": "文中列出的中国矿业融资渠道包括？", "options": [{"label": "A", "text": "政策性银行贷款"}, {"label": "B", "text": "商业银行贷款"}, {"label": "C", "text": "矿业产业基金"}, {"label": "D", "text": "境外资本市场融资"}], "answer": "ABCD", "explanation": "四项均为文中列出的中国矿业融资渠道。"}, {"id": "M51", "type": "multi", "number": 51, "question": "矿山生产计划（Mine Production Schedule）的关键要素包括？", "options": [{"label": "A", "text": "开采顺序"}, {"label": "B", "text": "年处理量"}, {"label": "C", "text": "剥采进度"}, {"label": "D", "text": "品位波动管理"}], "answer": "ABCD", "explanation": "四项均为矿山生产计划的关键要素。"}, {"id": "M52", "type": "multi", "number": 52, "question": "下列哪些内容属于可行性研究（FS）经济评价章节的核心组成模块？", "options": [{"label": "A", "text": "投资估算"}, {"label": "B", "text": "收入预测与成本估算"}, {"label": "C", "text": "融资方案与财务评价"}, {"label": "D", "text": "不确定性分析"}], "answer": "ABCD", "explanation": "四项均为可行性研究经济评价章节的核心组成模块。"}, {"id": "M54", "type": "multi", "number": 54, "question": "关于TC、RC与PP的表述，正确的有？", "options": [{"label": "A", "text": "TC是冶炼费，常以$/dmt计价"}, {"label": "B", "text": "RC是精炼费，常以c/lb阴极铜计价"}, {"label": "C", "text": "TC与RC通常同步谈判"}, {"label": "D", "text": "PP是在价格超过触发价后分享超额收益的条款"}], "answer": "ABCD", "explanation": "四项均为TC（冶炼费）、RC（精炼费）和PP（价格分享条款）的正确描述。"}, {"id": "M64", "type": "multi", "number": 64, "question": "中国稀土主导型市场结构形成与维持的重要机制包括？", "options": [{"label": "A", "text": "配额或总量控制"}, {"label": "B", "text": "六大集团整合"}, {"label": "C", "text": "高比例精炼加工能力"}, {"label": "D", "text": "税收与环保等政策工具"}], "answer": "ABCD", "explanation": "四项均为中国稀土市场结构形成与维持的重要机制。"}, {"id": "M66", "type": "multi", "number": 66, "question": "维持卡特尔合作均衡更可能需要哪些条件？", "options": [{"label": "A", "text": "较高的贴现因子"}, {"label": "B", "text": "透明的监督机制"}, {"label": "C", "text": "成员数量较少"}, {"label": "D", "text": "可信的惩罚机制"}], "answer": "ABCD", "explanation": "卡特尔合作均衡需要高贴现因子、透明监督、少成员和可信惩罚机制。"}, {"id": "M81", "type": "multi", "number": 81, "question": "下列哪些属于BIT的核心保护条款或机制？", "options": [{"label": "A", "text": "国民待遇（NT）"}, {"label": "B", "text": "最惠国待遇（MFN）"}, {"label": "C", "text": "公平公正待遇（FET）"}, {"label": "D", "text": "国际仲裁（ISDS）"}], "answer": "ABCD", "explanation": "四项均为BIT（双边投资协定）的核心保护条款和机制。"}, {"id": "M82", "type": "multi", "number": 82, "question": "根据\"矿权流转\"的界定，下列哪些行为属于依法可以发生的矿权流转方式？", "options": [{"label": "A", "text": "出售"}, {"label": "B", "text": "出租"}, {"label": "C", "text": "入股"}, {"label": "D", "text": "抵押"}], "answer": "ABCD", "explanation": "出售、出租、入股、抵押均为依法可以发生的矿权流转方式。"}, {"id": "M83", "type": "multi", "number": 83, "question": "根据教材内容，下列哪些矿产被明确视为能源转型中的关键矿产或新能源矿产？", "options": [{"label": "A", "text": "锂"}, {"label": "B", "text": "钴"}, {"label": "C", "text": "镍"}, {"label": "D", "text": "萤石"}], "answer": "ABC", "explanation": "锂、钴、镍是能源转型的关键矿产（电池材料）。萤石主要用于冶金和化工。"}, {"id": "M84", "type": "multi", "number": 84, "question": "供给集中与需求分散的结构性矛盾，可能带来哪些风险？", "options": [{"label": "A", "text": "单点中断放大效应"}, {"label": "B", "text": "定价权失衡"}, {"label": "C", "text": "战略竞争烈度上升"}, {"label": "D", "text": "自动消除全球供给风险"}], "answer": "ABC", "explanation": "供给集中带来单点中断放大、定价权失衡和战略竞争加剧。D与矛盾方向相反。"}, {"id": "M88", "type": "multi", "number": 88, "question": "国家战略矿产储备的经济学基础包括哪些？", "options": [{"label": "A", "text": "供给冲击缓冲理论"}, {"label": "B", "text": "价格稳定机制"}, {"label": "C", "text": "谈判筹码论"}, {"label": "D", "text": "保证矿价永不波动"}], "answer": "ABC", "explanation": "战略储备的经济学基础包括供给冲击缓冲、价格稳定和谈判筹码。D表述绝对化，不符合实际。"}, {"id": "M89", "type": "multi", "number": 89, "question": "二次资源的经济竞争力主要取决于哪些因素？", "options": [{"label": "A", "text": "回收技术成熟度与单位回收成本"}, {"label": "B", "text": "废旧产品回收量规模"}, {"label": "C", "text": "政策激励"}, {"label": "D", "text": "企业广告投入强度"}], "answer": "ABC", "explanation": "二次资源经济竞争力取决于回收技术、规模和回收量及政策激励。广告投入不是关键因素。"}, {"id": "M99", "type": "multi", "number": 99, "question": "原文认为，促使深海采矿经济可行性发生改善或质变的条件包括", "options": [{"label": "A", "text": "钴镍价格持续高位"}, {"label": "B", "text": "深海设备规模化使CAPEX下降30%—40%"}, {"label": "C", "text": "技术进步使OPEX显著下降"}, {"label": "D", "text": "普通钢材价格大幅下降"}], "answer": "ABC", "explanation": "深海采矿经济可行性改善依赖钴镍高价、设备规模化降低CAPEX和技术进步降低OPEX。钢材价格对深海采矿影响有限。"}, {"id": "M187", "type": "multi", "number": 187, "question": "下列哪些矿种被二十大报告及相关政策明确为我国需重点保障的战略性矿产?", "options": [{"label": "A", "text": "石油和天然气（能源矿产）"}, {"label": "B", "text": "锂、钴、镍（新能源关键矿产）"}, {"label": "C", "text": "稀土、钨（优势战略矿产）"}, {"label": "D", "text": "普通建筑用砂石"}], "answer": "ABC", "explanation": "石油天然气、锂钴镍、稀土钨均为战略性矿产。普通建筑用砂石不属于需重点保障的战略性矿产。"}, {"id": "M189", "type": "multi", "number": 189, "question": "导致太空采矿\"运回地球模式\"难以形成成熟商业模式的原因有", "options": [{"label": "A", "text": "运输成本远高于多数矿产品价值"}, {"label": "B", "text": "若大量运回铂族金属可能冲击市场价格"}, {"label": "C", "text": "所有金属都可在地球市场保持高价"}, {"label": "D", "text": "除少数高价值金属外，大多数矿产品经济意义不足"}], "answer": "ABD", "explanation": "运输成本高、可能冲击市场和仅少数高价值金属有经济意义是太空采矿商业模式困难的原因。C与事实相反。"}];
+
+// ====== STATE ======
+let currentMode = 'all';
+let filteredQuestions = [];
+let currentIndex = 0;
+let userAnswers = {};    // { questionId: { selected: ['A','B'], checked: false } }
+let questionStatus = {}; // { questionId: 'correct'|'wrong'|null }
+
+// ====== INIT ======
+function init() {
+    loadWrongBook();
+    updateStats();
+    setMode('all');
+}
+
+function loadWrongBook() {
+    try { window.wrongBook = JSON.parse(localStorage.getItem('quiz_wrong_book') || '{}'); }
+    catch(e) { window.wrongBook = {}; }
+}
+
+function saveWrongBook() {
+    localStorage.setItem('quiz_wrong_book', JSON.stringify(window.wrongBook));
+}
+
+function resetWrongBook() {
+    if (confirm('确定要清空错题本吗？此操作不可恢复。')) {
+        window.wrongBook = {};
+        saveWrongBook();
+        updateStats();
+    }
+}
+
+function isWrong(qid) { return !!window.wrongBook[qid]; }
+
+function setMode(mode) {
+    currentMode = mode;
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.mode-btn[data-mode="${mode}"]`)?.classList.add('active');
+
+    let all = [...QUESTION_BANK];
+
+    if (mode === 'single') {
+        filteredQuestions = all.filter(q => q.type === 'single');
+    } else if (mode === 'multi') {
+        filteredQuestions = all.filter(q => q.type === 'multi');
+    } else if (mode === 'wrong') {
+        filteredQuestions = all.filter(q => isWrong(q.id));
+    } else if (mode === 'random') {
+        let shuffled = [...all].sort(() => Math.random() - 0.5);
+        filteredQuestions = shuffled.slice(0, 10);
+    } else {
+        filteredQuestions = all;
+    }
+
+    // Reset user answers for this session
+    userAnswers = {};
+    questionStatus = {};
+
+    // Restore known status from wrong book + history
+    filteredQuestions.forEach(q => {
+        if (isWrong(q.id)) {
+            userAnswers[q.id] = { selected: [], checked: false, wrongBefore: true };
+        }
+    });
+
+    currentIndex = 0;
+    updateStats();
+    renderAll();
+}
+
+function updateStats() {
+    let total = QUESTION_BANK.length;
+    let wrongCount = Object.keys(window.wrongBook).length;
+    let doneCount = Object.keys(questionStatus).length;
+    let correctCount = Object.values(questionStatus).filter(s => s === 'correct').length;
+    let rate = doneCount > 0 ? Math.round(correctCount / doneCount * 100) + '%' : '-';
+
+    document.getElementById('stat-total').textContent = '📝 总题: ' + total;
+    document.getElementById('stat-done').textContent = '✅ 已做: ' + doneCount;
+    document.getElementById('stat-wrong').textContent = '❌ 错题: ' + wrongCount;
+    document.getElementById('stat-rate').textContent = '📊 正确率: ' + rate;
+    document.getElementById('wrong-count-badge').textContent = wrongCount;
+
+    let progress = filteredQuestions.length > 0 ? (doneCount / filteredQuestions.length * 100) : 0;
+    document.getElementById('progress-fill').style.width = progress + '%';
+}
+
+function renderAll() {
+    renderQuestion();
+    renderNav();
+    updateStats();
+}
+
+function renderQuestion() {
+    let area = document.getElementById('quiz-area');
+
+    if (filteredQuestions.length === 0) {
+        let msg = currentMode === 'wrong' ? '错题本为空！继续加油~ 🎉' : '暂无题目';
+        area.innerHTML = `<div class="empty-state"><div class="icon">📭</div><p>${msg}</p></div>`;
+        document.getElementById('nav-buttons').innerHTML = '';
+        return;
+    }
+
+    if (currentIndex >= filteredQuestions.length) {
+        let done = Object.keys(questionStatus).length;
+        let correct = Object.values(questionStatus).filter(s => s === 'correct').length;
+        area.innerHTML = `
+            <div class="empty-state">
+                <div class="icon">🎉</div>
+                <p>本轮刷题完成！</p>
+                <p style="margin-top:8px;">正确率: ${correct}/${done} (${done>0?Math.round(correct/done*100):0}%)</p>
+                <button class="btn btn-primary" style="margin-top:16px;" onclick="setMode(currentMode)">重新开始</button>
+            </div>`;
+        document.getElementById('nav-buttons').innerHTML = '';
+        return;
+    }
+
+    let q = filteredQuestions[currentIndex];
+    let ua = userAnswers[q.id] || { selected: [], checked: false };
+    let status = questionStatus[q.id];
+    let isMulti = q.type === 'multi';
+
+    let html = `<div class="q-card ${status==='correct'?'correct':status==='wrong'?'wrong':''}">`;
+    html += `<div class="q-header">`;
+    html += `<span class="q-type-badge ${isMulti?'multi':'single'}">${isMulti?'多选题':'单选题'}</span>`;
+    html += `<span class="q-number">#${currentIndex+1}/${filteredQuestions.length}</span>`;
+    html += `<span class="q-title">${q.question}${isMulti?'<span style="color:#e67e22;font-size:0.8em;">（多选）</span>':''}</span>`;
+    html += `</div>`;
+
+    html += `<div class="options">`;
+    q.options.forEach(opt => {
+        let selClass = '';
+        if (status) {
+            let isCorrectOpt = q.answer.includes(opt.label);
+            let isSelected = ua.selected.includes(opt.label);
+            if (isCorrectOpt && isSelected) selClass = ' correct-answer';
+            else if (!isCorrectOpt && isSelected) selClass = ' wrong-answer';
+            else if (isCorrectOpt && !isSelected) selClass = ' correct-answer';
+        } else {
+            selClass = ua.selected.includes(opt.label) ? ' selected' : '';
+        }
+        let disabled = status ? 'disabled' : '';
+        let checked = ua.selected.includes(opt.label) ? 'checked' : '';
+        let inputType = isMulti ? 'checkbox' : 'radio';
+        let name = isMulti ? `opt-${q.id}-${opt.label}` : `opt-${q.id}`;
+        html += `<label class="option${selClass}">
+            <input type="${inputType}" name="${name}" value="${opt.label}" ${checked} ${disabled}
+                   onchange="selectOption('${q.id}', '${opt.label}', this.checked, '${isMulti}')">
+            <span class="option-label">${opt.label}.</span>
+            <span class="option-text">${opt.text}</span>
+        </label>`;
+    });
+    html += `</div>`;
+
+    // Buttons
+    html += `<div class="actions">`;
+    if (!status) {
+        let canCheck = isMulti ? ua.selected.length > 0 : ua.selected.length > 0;
+        html += `<button class="btn btn-primary" onclick="checkAnswer('${q.id}')" ${!canCheck?'disabled':''}>✅ 提交答案</button>`;
+    }
+    if (status) {
+        html += `<button class="btn btn-outline" onclick="nextQuestion()">➡️ 下一题</button>`;
+    }
+    html += `</div>`;
+
+    // Feedback
+    if (status) {
+        let isCorrect = status === 'correct';
+        let fbClass = isCorrect ? 'correct' : 'wrong';
+        let icon = isCorrect ? '✅ 回答正确！' : '❌ 回答错误';
+        html += `<div class="feedback show ${fbClass}">`;
+        html += `<strong>${icon}</strong><br>`;
+        html += `正确答案: <strong>${q.answer.split('').join(', ')}</strong>`;
+        if (q.explanation) html += `<br>💡 ${q.explanation}`;
+        html += `</div>`;
+    }
+
+    html += `</div>`;
+    area.innerHTML = html;
+}
+
+function selectOption(qid, label, checked, isMulti) {
+    if (questionStatus[qid]) return;
+    if (!userAnswers[qid]) userAnswers[qid] = { selected: [], checked: false };
+
+    if (isMulti === 'true' || isMulti === true) {
+        if (checked) {
+            if (!userAnswers[qid].selected.includes(label)) userAnswers[qid].selected.push(label);
+        } else {
+            userAnswers[qid].selected = userAnswers[qid].selected.filter(l => l !== label);
+        }
+    } else {
+        userAnswers[qid].selected = [label];
+    }
+    renderQuestion();
+}
+
+function checkAnswer(qid) {
+    let ua = userAnswers[qid];
+    if (!ua || ua.selected.length === 0) return;
+
+    let q = filteredQuestions.find(q => q.id === qid);
+    if (!q) return;
+
+    let userAns = [...ua.selected].sort().join('');
+    let correctAns = [...q.answer].sort().join('');
+
+    ua.checked = true;
+    questionStatus[qid] = userAns === correctAns ? 'correct' : 'wrong';
+
+    if (questionStatus[qid] === 'correct') {
+        // Remove from wrong book if it was there
+        if (window.wrongBook[qid]) {
+            delete window.wrongBook[qid];
+            saveWrongBook();
+        }
+    } else {
+        // Add to wrong book
+        window.wrongBook[qid] = {
+            id: qid,
+            question: q.question,
+            options: q.options,
+            answer: q.answer,
+            explanation: q.explanation || '',
+            type: q.type,
+            timestamp: Date.now()
+        };
+        saveWrongBook();
+    }
+
+    updateStats();
+    renderQuestion();
+}
+
+function nextQuestion() {
+    if (currentIndex < filteredQuestions.length - 1) {
+        currentIndex++;
+    } else {
+        currentIndex = filteredQuestions.length; // Will show completion
+    }
+    renderAll();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function renderNav() {
+    let nav = document.getElementById('nav-buttons');
+    if (filteredQuestions.length === 0) { nav.innerHTML = ''; return; }
+
+    let html = '';
+    html += `<button class="btn btn-outline" onclick="currentIndex=0;renderAll();scrollTo(0,0);" ${currentIndex===0?'disabled':''}>⏮ 第一题</button>`;
+    html += `<button class="btn btn-outline" onclick="prevQuestion()" ${currentIndex===0?'disabled':''}>◀ 上一题</button>`;
+    html += `<span style="padding:10px;font-weight:600;">${currentIndex+1} / ${filteredQuestions.length}</span>`;
+    html += `<button class="btn btn-outline" onclick="nextQuestion()" ${currentIndex>=filteredQuestions.length-1?'disabled':''}>下一题 ▶</button>`;
+    html += `<button class="btn btn-outline" onclick="currentIndex=filteredQuestions.length-1;renderAll();scrollTo(0,0);" ${currentIndex>=filteredQuestions.length-1?'disabled':''}>⏭ 最后一题</button>`;
+    nav.innerHTML = html;
+}
+
+function prevQuestion() {
+    if (currentIndex > 0) {
+        currentIndex--;
+        renderAll();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT' && e.target.type === 'text') return;
+    if (e.key === 'ArrowRight' || e.key === 'n') nextQuestion();
+    if (e.key === 'ArrowLeft' || e.key === 'p') prevQuestion();
+});
+
+// Event delegation for mode buttons
+document.querySelector('.mode-bar').addEventListener('click', function(e) {
+    const btn = e.target.closest('.mode-btn');
+    if (btn) {
+        const mode = btn.dataset.mode;
+        if (mode) setMode(mode);
+    }
+});
+
+init();
+</script>
+</body>
+</html>
