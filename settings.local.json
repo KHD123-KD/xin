@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip3 list *)",
+      "Bash(pip list *)",
+      "Bash(python3 *)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(python -c \"import docx; print\\('docx available'\\)\")",
+      "Bash(pip install *)",
+      "Bash(PYTHONIOENCODING=utf-8 python3 -c ' *)",
+      "Bash(PYTHONIOENCODING=utf-8 python3 *)",
+      "Bash(node -e ' *)",
+      "Bash(npx playwright *)",
+      "Bash(node verify_app.js)",
+      "Bash(npm ls *)",
+      "Bash(npm root *)",
+      "Bash(npm init *)",
+      "Bash(npm install *)",
+      "Bash(node verify_probes.js)",
+      "Bash(rm -f verify_app.js verify_probes.js verify_*.png package.json package-lock.json)",
+      "Bash(rm -rf node_modules)"
+    ]
+  }
+}
